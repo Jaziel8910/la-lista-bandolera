@@ -1,0 +1,7 @@
+{
+  "name": "La Lista Bandolera de Mikaela",
+  "description": "Un diario aesthetic y kawaii para administrar tus personajes, crushes y bandoleros favoritos. Registra tus pensamientos, rankea canciones, crea playlists, celebra tus rachas y desbloquea logros divertidos. ¡Tu espacio personal para todo lo que amas!",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
