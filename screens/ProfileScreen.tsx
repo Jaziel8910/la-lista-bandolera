@@ -1,8 +1,17 @@
+
 import React, { useState, useMemo } from 'react';
-import { Achievement, StreakHistoryEntry } from '../types';
-import { Flame, Sun, Moon, Target, History, Check, Trophy } from 'lucide-react';
+import { Achievement, StreakHistoryEntry, UserProfile } from '../types';
+import { Flame, Sun, Moon, Target, History, Check, Trophy, User, Heart, LogOut, Gift } from 'lucide-react';
+import { DAILY_QUESTS, BADGES } from '../constants';
 
 type Theme = 'light' | 'dark';
+
+declare global {
+    interface Window {
+        puter: any;
+    }
+}
+
 
 interface ProfileScreenProps {
     streak: number;
@@ -13,6 +22,8 @@ interface ProfileScreenProps {
     streakGoal: number;
     setStreakGoal: (goal: number) => void;
     streakHistory: StreakHistoryEntry[];
+    userProfile: UserProfile;
+    dailyQuestsCompleted: string[];
 }
 
 const ThemeSwitcher: React.FC<{ theme: Theme; setTheme: (theme: Theme) => void }> = ({ theme, setTheme }) => {
@@ -31,7 +42,7 @@ const ThemeSwitcher: React.FC<{ theme: Theme; setTheme: (theme: Theme) => void }
     );
 };
 
-const ProfileScreen: React.FC<ProfileScreenProps> = ({ streak, achievements, unlockedAchievements, theme, setTheme, streakGoal, setStreakGoal, streakHistory }) => {
+const ProfileScreen: React.FC<ProfileScreenProps> = ({ streak, achievements, unlockedAchievements, theme, setTheme, streakGoal, setStreakGoal, streakHistory, userProfile, dailyQuestsCompleted }) => {
     const [goalInput, setGoalInput] = useState<string>(streakGoal.toString());
     const progress = streakGoal > 0 ? Math.min((streak / streakGoal) * 100, 100) : 0;
     
@@ -44,39 +55,80 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ streak, achievements, unl
         const newGoal = parseInt(goalInput, 10);
         if (!isNaN(newGoal) && newGoal > 0) {
             setStreakGoal(newGoal);
-            if (!unlockedAchievements.includes('set_goal')) {
-                // This state update needs to be lifted to App.tsx to work
-                console.log("Achievement 'set_goal' unlocked logic should be in App.tsx");
-            }
         }
+    }
+    
+    const handleSignOut = () => {
+        window.puter.auth.signOut();
+        // Optionally, reload the page to clear state, as puter auth state change doesn't trigger react re-render
+        window.location.reload();
     }
     
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
     }
 
+    const activeBadge = userProfile.activeBadgeId ? BADGES[userProfile.activeBadgeId] : null;
+
     return (
-        <div className="p-4 animate-swoop-in space-y-6">
+        <div className="p-4 space-y-6">
+            <div className="bg-white dark:bg-[#3D315B] rounded-2xl shadow-lg p-4 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E54F6D] to-[#FAA9BE] flex items-center justify-center">
+                        <User className="text-white" size={24}/>
+                    </div>
+                    <div>
+                        <p className="font-bold text-lg text-[#3D315B] dark:text-white flex items-center gap-1.5">
+                            {userProfile.username || 'Invitado'}
+                            {activeBadge && <span title={activeBadge.name}>{activeBadge.icon}</span>}
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                             <span className="font-semibold text-sm text-[#8E82AE]">{userProfile.corazones}</span>
+                             <Heart className="text-[#E54F6D]" fill="#E54F6D" size={14}/>
+                        </div>
+                    </div>
+                </div>
+                {userProfile.username && (
+                    <button onClick={handleSignOut} className="bg-[#F3D9E9] dark:bg-[#2A2438] p-2.5 rounded-full text-[#E54F6D] dark:text-[#fbc2eb] hover:opacity-80 transition-opacity">
+                        <LogOut size={20}/>
+                    </button>
+                )}
+            </div>
+
             <ThemeSwitcher theme={theme} setTheme={setTheme} />
+
+            <div className="bg-white dark:bg-[#3D315B] rounded-2xl shadow-lg p-6">
+                <h2 className="text-lg font-semibold text-[#3D315B] dark:text-white text-center mb-4">Misiones Diarias</h2>
+                <div className="space-y-3">
+                    {DAILY_QUESTS.map(quest => {
+                        const isCompleted = dailyQuestsCompleted.includes(quest.id);
+                        return (
+                            <div key={quest.id} className={`p-3 rounded-lg flex items-center justify-between transition-colors ${isCompleted ? 'bg-green-100 dark:bg-green-900/40' : 'bg-gray-100 dark:bg-[#2A2438]'}`}>
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isCompleted ? 'bg-green-500' : 'bg-[#E54F6D]'}`}>
+                                        {isCompleted ? <Check className="text-white" /> : <Gift className="text-white" />}
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-sm text-[#3D315B] dark:text-white">{quest.name}</p>
+                                        <p className="text-xs text-[#8E82AE] dark:text-gray-400">{quest.description}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 font-bold text-sm text-yellow-500">
+                                    <span>+{quest.reward}</span>
+                                    <Heart fill="#f59e0b" size={14} className="text-yellow-500" />
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
             
-            {/* Streak Section */}
             <div className="bg-white dark:bg-[#3D315B] rounded-2xl shadow-lg p-6 text-center">
                  <h2 className="text-lg font-semibold text-[#3D315B] dark:text-white mb-4">Tu Progreso de Racha</h2>
                 <div className="relative w-40 h-40 mx-auto flex items-center justify-center">
                      <svg className="w-full h-full" viewBox="0 0 100 100">
                         <circle className="text-gray-200 dark:text-[#2A2438]" strokeWidth="10" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
-                        <circle
-                            className="text-[#E54F6D] dark:text-[#fbc2eb]"
-                            strokeWidth="10"
-                            strokeLinecap="round"
-                            stroke="currentColor"
-                            fill="transparent"
-                            r="45"
-                            cx="50"
-                            cy="50"
-                            style={{ strokeDasharray: 283, strokeDashoffset: 283 - (progress / 100) * 283, transition: 'stroke-dashoffset 0.5s ease-in-out' }}
-                            transform="rotate(-90 50 50)"
-                        />
+                        <circle className="text-[#E54F6D] dark:text-[#fbc2eb]" strokeWidth="10" strokeLinecap="round" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" style={{ strokeDasharray: 283, strokeDashoffset: 283 - (progress / 100) * 283, transition: 'stroke-dashoffset 0.5s ease-in-out' }} transform="rotate(-90 50 50)" />
                     </svg>
                     <div className="absolute flex flex-col items-center">
                         <Flame className="text-[#E54F6D] dark:text-[#fbc2eb]" size={40} />
@@ -85,18 +137,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ streak, achievements, unl
                     </div>
                 </div>
                 <div className="flex justify-around mt-6 text-center">
-                    <div>
-                        <p className="text-xs text-[#8E82AE]">Meta</p>
-                        <p className="font-bold text-lg text-[#3D315B] dark:text-white">{streakGoal}</p>
-                    </div>
-                     <div>
-                        <p className="text-xs text-[#8E82AE]">Racha Máx</p>
-                        <p className="font-bold text-lg text-[#3D315B] dark:text-white">{longestStreak}</p>
-                    </div>
+                    <div><p className="text-xs text-[#8E82AE]">Meta</p><p className="font-bold text-lg text-[#3D315B] dark:text-white">{streakGoal}</p></div>
+                    <div><p className="text-xs text-[#8E82AE]">Racha Máx</p><p className="font-bold text-lg text-[#3D315B] dark:text-white">{longestStreak}</p></div>
                 </div>
             </div>
 
-            {/* Streak Goal & History */}
             <div className="bg-white dark:bg-[#3D315B] rounded-2xl shadow-lg p-6 space-y-4">
                  <h2 className="text-lg font-semibold text-[#3D315B] dark:text-white text-center flex items-center justify-center"><Target size={20} className="mr-2"/>Tu Meta</h2>
                  <div className="flex items-center space-x-2">
@@ -107,20 +152,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ streak, achievements, unl
                  <h2 className="text-lg font-semibold text-[#3D315B] dark:text-white text-center flex items-center justify-center pt-2"><History size={20} className="mr-2"/>Historial de Rachas</h2>
                  {streakHistory.length > 0 ? (
                      <ul className="space-y-2 max-h-40 overflow-y-auto pr-2">
-                         {streakHistory.map((entry, index) => (
-                             <li key={index} className="flex justify-between items-center bg-gray-100 dark:bg-[#2A2438] p-2 rounded-lg">
-                                 <span className="text-sm font-medium text-[#585076] dark:text-gray-300">{formatDate(entry.startDate)} - {formatDate(entry.endDate)}</span>
-                                 <span className="font-bold text-[#9381FF] dark:text-[#fbc2eb]">{entry.length} {entry.length === 1 ? 'día' : 'días'}</span>
-                             </li>
-                         ))}
+                         {streakHistory.map((entry, index) => (<li key={index} className="flex justify-between items-center bg-gray-100 dark:bg-[#2A2438] p-2 rounded-lg"><span className="text-sm font-medium text-[#585076] dark:text-gray-300">{formatDate(entry.startDate)} - {formatDate(entry.endDate)}</span><span className="font-bold text-[#9381FF] dark:text-[#fbc2eb]">{entry.length} {entry.length === 1 ? 'día' : 'días'}</span></li>))}
                      </ul>
-                 ) : (
-                     <p className="text-center text-sm text-[#A093C7] dark:text-gray-400">Aún no tienes rachas completadas. ¡Sigue así!</p>
-                 )}
+                 ) : <p className="text-center text-sm text-[#A093C7] dark:text-gray-400">Aún no tienes rachas completadas. ¡Sigue así!</p>}
             </div>
 
-
-            {/* Achievements Section */}
             <div className="bg-white dark:bg-[#3D315B] rounded-2xl shadow-lg p-6">
                 <div className="text-center mb-4">
                     <h2 className="text-lg font-semibold text-[#3D315B] dark:text-white">Logros Desbloqueados</h2>
@@ -130,19 +166,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ streak, achievements, unl
                     {achievements.filter(a => !a.isSecret).slice(0, 12).map(ach => {
                         const isUnlocked = unlockedAchievements.includes(ach.id);
                         return (
-                            <div
-                                key={ach.id}
-                                className={`flex flex-col items-center p-2 rounded-lg text-center transition-all duration-300 transform ${isUnlocked ? 'scale-105' : 'opacity-60'}`}
-                                title={isUnlocked ? ach.description : '???' }
-                            >
-                                <div className={`w-14 h-14 flex items-center justify-center rounded-full mb-2 transition-colors ${
-                                    isUnlocked ? 'bg-gradient-to-br from-[#E54F6D] to-[#FAA9BE]' : 'bg-gray-200 dark:bg-[#2A2438]'
-                                }`}>
+                            <div key={ach.id} className={`flex flex-col items-center p-2 rounded-lg text-center transition-all duration-300 transform ${isUnlocked ? 'scale-105' : 'opacity-60'}`} title={isUnlocked ? ach.description : '???' }>
+                                <div className={`w-14 h-14 flex items-center justify-center rounded-full mb-2 transition-colors ${ isUnlocked ? 'bg-gradient-to-br from-[#E54F6D] to-[#FAA9BE]' : 'bg-gray-200 dark:bg-[#2A2438]'}`}>
                                     {isUnlocked ? React.cloneElement<{ className?: string; size?: number }>(ach.icon, { className: 'text-white', size: 28 }) : <span className="text-2xl text-gray-400 dark:text-gray-500">?</span>}
                                 </div>
-                                <h3 className={`text-xs font-semibold ${isUnlocked ? 'text-[#3D315B] dark:text-white' : 'text-gray-400'}`}>
-                                    {isUnlocked ? ach.name : 'Bloqueado'}
-                                </h3>
+                                <h3 className={`text-xs font-semibold ${isUnlocked ? 'text-[#3D315B] dark:text-white' : 'text-gray-400'}`}>{isUnlocked ? ach.name : 'Bloqueado'}</h3>
                             </div>
                         );
                     })}

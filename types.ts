@@ -1,24 +1,31 @@
+import React from 'react';
+
 export enum Screen {
     BANDOLEROS,
     DIARY,
     MUSIC,
     BESTIES,
     PROFILE,
-    REWARDS, // GRAN FUNCIÓN: Pantalla de recompensas diarias
+    SHOP,
+    CHAT,
 }
 
 export interface Bandolero {
     id: string;
     name: string;
     rating: number;
-    image?: string; // Main image (base64)
+    image?: string; // Puter file path
     notes: string;
     origin: string;
     tags?: string[];
-    // MÁS PERSONALIZACIÓN:
-    themeColor: string; // e.g., a hex code for UI accents
+    themeColor: string;
     favoriteQuote: string;
-    gallery?: string[]; // Multiple images
+    gallery?: string[]; // Array of Puter file paths
+    // AI Chat Personality
+    personality: string; // Detailed personality description
+    style: string; // Their communication style
+    topics: string; // Topics they like to talk about
+    appearanceDescription: string; // For AI image generation
 }
 
 export interface DiaryEntry {
@@ -26,11 +33,11 @@ export interface DiaryEntry {
     date: string;
     title: string;
     content: string;
-    mood?: string; // emoji character
-    coverImage?: string; // base64 string
+    mood?: string;
+    coverImage?: string; // Puter file path
     mentionedBandoleroIds?: string[];
-    // NUEVA FUNCIÓN: Stickers en el diario
     stickers?: { id: string, x: number, y: number }[]; 
+    isDream?: boolean;
 }
 
 export interface Song {
@@ -44,14 +51,13 @@ export interface Playlist {
     id: string;
     name: string;
     songIds: string[];
-    // NUEVA FUNCIÓN: Portadas para playlists
-    coverImage?: string; 
+    coverImage?: string; // Puter file path
 }
 
 export interface Bestie {
     id: string;
     name: string;
-    image?: string; // base64 string
+    image?: string; // Puter file path
     anniversary: string;
     favoriteMemory: string;
 }
@@ -62,6 +68,7 @@ export interface Achievement {
     description: string;
     icon: React.ReactElement;
     isSecret?: boolean;
+    reward: number; // Corazones awarded for unlocking
 }
 
 export interface StreakHistoryEntry {
@@ -70,18 +77,43 @@ export interface StreakHistoryEntry {
     length: number;
 }
 
-// GRAN FUNCIÓN: Tipos para el sistema de Recompensas
+export interface UserProfile {
+    username: string | null;
+    corazones: number;
+    activeBadgeId?: string;
+    storyTokens?: number;
+}
+
 export interface Reward {
     id: string;
-    type: 'theme' | 'sticker-pack';
+    type: 'sticker-pack' | 'ai_model' | 'profile_badge' | 'ai_story_token';
     name: string;
     description: string;
-    value: string; // e.g., theme name or sticker pack ID
+    value: string;
     rarity: 'common' | 'rare' | 'epic';
+    price: number;
 }
 
 export interface Sticker {
     id: string;
     packId: string;
     url: string; // Could be base64 or a URL
+}
+
+// AI Chat Types
+export interface ChatMessage {
+    role: 'user' | 'assistant';
+    text: string;
+    imagePath?: string; // A Puter path to an image sent OR received
+    senderName?: string; // For group chats, to show which bandolero is talking
+}
+
+export interface ChatSession {
+    id: string;
+    type: 'solo' | 'group';
+    participantIds: string[];
+    messages: ChatMessage[];
+    model: string;
+    name: string; // e.g., "Chat with Draco" or "Loki & Sylvie"
+    image?: string; // single image or a composite for group
 }
